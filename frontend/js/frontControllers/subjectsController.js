@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () =>
     setupSubjectFormHandler();
     setupCancelHandler();
     setupPaginationControlsSubject();
+    setupDuplicateModalHandlers();
 });
 
 function setupSubjectFormHandler() 
@@ -43,6 +44,15 @@ function setupSubjectFormHandler()
             }
             else
             {
+                // Antes de crear, verificar que no exista una materia con el mismo nombre (case-insensitive)
+                const allSubjects = await subjectsAPI.fetchAll();
+                const exists = Array.isArray(allSubjects) && allSubjects.some(s => s.name && s.name.trim().toLowerCase() === subject.name.toLowerCase());
+                if (exists)
+                {
+                    showDuplicateModal();
+                    return; // evitar crear
+                }
+
                 await subjectsAPI.create(subject);
             }
             
@@ -55,6 +65,39 @@ function setupSubjectFormHandler()
             console.error(err.message);
         }
   });
+}
+
+function setupDuplicateModalHandlers()
+{
+    const modal = document.getElementById('duplicateModal');
+    const closeBtn = document.getElementById('closeDuplicate');
+    const okBtn = document.getElementById('duplicateOkBtn');
+
+    if (closeBtn) closeBtn.addEventListener('click', hideDuplicateModal);
+    if (okBtn) okBtn.addEventListener('click', () => {
+        hideDuplicateModal();
+        // limpiar campo para que el usuario ingrese otra materia
+        const nameInput = document.getElementById('name');
+        if (nameInput) nameInput.value = '';
+        nameInput.focus();
+    });
+
+    // cerrar al clickear fuera del contenido
+    if (modal) modal.addEventListener('click', (e) => {
+        if (e.target === modal) hideDuplicateModal();
+    });
+}
+
+function showDuplicateModal()
+{
+    const modal = document.getElementById('duplicateModal');
+    if (modal) modal.style.display = 'block';
+}
+
+function hideDuplicateModal()
+{
+    const modal = document.getElementById('duplicateModal');
+    if (modal) modal.style.display = 'none';
 }
 
 // 2.1
