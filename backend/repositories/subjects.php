@@ -58,6 +58,20 @@ function createSubject($conn, $name)
     ];
 }
 
+/**
+ * Verifica si existe una materia con el mismo nombre.
+ * Retorna true si existe, false en caso contrario.
+ */
+function subjectExistsByName($conn, $name)
+{
+    $sql = "SELECT COUNT(*) AS cnt FROM subjects WHERE LOWER(name) = LOWER(?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $name);
+    $stmt->execute();
+    $res = $stmt->get_result()->fetch_assoc();
+    return intval($res['cnt']) > 0;
+}
+
 function updateSubject($conn, $id, $name) 
 {
     $sql = "UPDATE subjects SET name = ? WHERE id = ?";

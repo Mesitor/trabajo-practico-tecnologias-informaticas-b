@@ -44,7 +44,21 @@ function handlePost($conn)
 {
     $input = json_decode(file_get_contents("php://input"), true);
 
-    $result = createSubject($conn, $input['name']);
+    $name = isset($input['name']) ? trim($input['name']) : '';
+    if ($name === '') {
+        http_response_code(400);
+        echo json_encode(["error" => "Nombre de materia inválido"]);
+        return;
+    }
+
+    // validar duplicado
+    if (subjectExistsByName($conn, $name)) {
+        http_response_code(409); // Conflict
+        echo json_encode(["error" => "La materia ya existe"]);
+        return;
+    }
+
+    $result = createSubject($conn, $name);
     if ($result['inserted'] > 0) 
     {
         echo json_encode(["message" => "Materia creada correctamente"]);
