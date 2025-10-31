@@ -74,7 +74,23 @@ function handlePut($conn)
 {
     $input = json_decode(file_get_contents("php://input"), true);
 
-    $result = updateSubject($conn, $input['id'], $input['name']);
+    $id = isset($input['id']) ? intval($input['id']) : 0;
+    $name = isset($input['name']) ? trim($input['name']) : '';
+
+    if ($id <= 0 || $name === '') {
+        http_response_code(400);
+        echo json_encode(["error" => "Datos inválidos para actualización"]);
+        return;
+    }
+
+    // validar duplicado excluyendo el propio id
+    if (subjectExistsByNameExcludingId($conn, $name, $id)) {
+        http_response_code(409);
+        echo json_encode(["error" => "Otra materia con ese nombre ya existe"]);
+        return;
+    }
+
+    $result = updateSubject($conn, $id, $name);
     if ($result['updated'] > 0) 
     {
         echo json_encode(["message" => "Materia actualizada correctamente"]);

@@ -72,6 +72,20 @@ function subjectExistsByName($conn, $name)
     return intval($res['cnt']) > 0;
 }
 
+/**
+ * Verifica si existe una materia con el mismo nombre
+ * excluyendo un id determinado (útil al actualizar para no contar el propio registro).
+ */
+function subjectExistsByNameExcludingId($conn, $name, $excludeId)
+{
+    $sql = "SELECT COUNT(*) AS cnt FROM subjects WHERE LOWER(name) = LOWER(?) AND id <> ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("si", $name, $excludeId);
+    $stmt->execute();
+    $res = $stmt->get_result()->fetch_assoc();
+    return intval($res['cnt']) > 0;
+}
+
 function updateSubject($conn, $id, $name) 
 {
     $sql = "UPDATE subjects SET name = ? WHERE id = ?";

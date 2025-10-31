@@ -44,11 +44,12 @@ function setupSubjectFormHandler()
             }
             else
             {
-                // Antes de crear, verificar que no exista una materia con el mismo nombre (case-insensitive)
+                // Antes de crear, verificar que no exista una materia con el mismo nombre
                 const allSubjects = await subjectsAPI.fetchAll();
                 const exists = Array.isArray(allSubjects) && allSubjects.some(s => s.name && s.name.trim().toLowerCase() === subject.name.toLowerCase());
                 if (exists)
                 {
+                    console.error(`Intento de crear materia duplicada (cliente): ${subject.name}`);
                     showDuplicateModal();
                     return; // evitar crear
                 }
