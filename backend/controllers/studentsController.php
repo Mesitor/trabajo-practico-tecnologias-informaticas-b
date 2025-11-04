@@ -93,6 +93,20 @@ function handleDelete($conn)
 {
     $input = json_decode(file_get_contents("php://input"), true);
 
+     if (!isset($input['id'])) {
+        http_response_code(400);
+        echo json_encode(["error" => "Falta el parámetro 'id'."]);
+        return;
+    }
+
+    $id = $input['id'];
+
+      if (studentHasAssignments($conn, $id)) {
+        http_response_code(409);
+        echo json_encode(["error" => "El estudiante está presente en una asignación."]);
+        return; 
+    }
+
     $result = deleteStudent($conn, $input['id']);
     if ($result['deleted'] > 0) 
     {

@@ -1,11 +1,11 @@
 /**
-*    File        : frontend/js/controllers/studentsController.js
-*    Project     : CRUD PHP
-*    Author      : Tecnologías Informáticas B - Facultad de Ingeniería - UNMdP
-*    License     : http://www.gnu.org/licenses/gpl.txt  GNU GPL 3.0
-*    Date        : Mayo 2025
-*    Status      : Prototype
-*    Iteration   : 2.0 ( prototype )
+*    File        : frontend/js/controllers/studentsController.js
+*    Project     : CRUD PHP
+*    Author      : Tecnologías Informáticas B - Facultad de Ingeniería - UNMdP
+*    License     : http://www.gnu.org/licenses/gpl.txt  GNU GPL 3.0
+*    Date        : Mayo 2025
+*    Status      : Prototype
+*    Iteration   : 2.0 ( prototype )
 */
 
 import { studentsAPI } from '../apiConsumers/studentsAPI.js';
@@ -18,213 +18,256 @@ const limit = 5;
 
 document.addEventListener('DOMContentLoaded', () => 
 {
-    loadStudents();
-    setupFormHandler();
-    setupCancelHandler();
-    setupPaginationControls();//2.0
-    setupDuplicateMailModalHandlers();
+    loadStudents();
+    setupFormHandler();
+    setupCancelHandler();
+    setupPaginationControls();//2.0
+    setupDuplicateMailModalHandlers();
+    setupAssignmentConflictModalHandlers(); // Agregado
 });
-  
+  
 function setupFormHandler()
 {
-    const form = document.getElementById('studentForm');
-    form.addEventListener('submit', async e => 
-    {
-        e.preventDefault();
-        const student = getFormData();
-    
-        try 
-        {
-            const students = await studentsAPI.fetchAll();
-            const duplicate = students.find(s => s.email === student.email && s.id !== student.id);
-
-            if (duplicate)
-            {
-                showDuplicateMailModal();
-                return;
-            }
-
-            if (student.id) 
-            {
+    const form = document.getElementById('studentForm');
+    form.addEventListener('submit', async e => 
+    {
+        e.preventDefault();
+        const student = getFormData();
+    
+        try 
+        {
+            // Si el student tiene ID, es un update, comprobamos si el email ya existe
+            if (student.id) {
+                const students = await studentsAPI.fetchAll();
+                const duplicate = students.find(s => s.email === student.email && s.id !== student.id);
+                if (duplicate)
+                {
+                    showDuplicateMailModal();
+                    return;
+                }
                 await studentsAPI.update(student);
             } 
             else 
             {
-                await studentsAPI.create(student);
+                // Para el create, el API lanzará excepción si el backend devuelve 400 por email duplicado
+                try {
+                    await studentsAPI.create(student);
+                } catch (err) {
+                    if (err.message.includes("El correo ya está registrado")) {
+                        showDuplicateMailModal();
+                        return;
+                    }
+                    throw err; // Re-lanza otros errores
+                }
             }
-            clearForm();
-            loadStudents();
-        }
-        catch (err)
-        {
-            console.error(err.message);
-        }
-    });
+            clearForm();
+            loadStudents();
+        }
+        catch (err)
+        {
+            console.error(err.message);
+        }
+    });
 }
 
 function showDuplicateMailModal() {
-    document.getElementById('duplicateModal').style.display = 'block';
+    document.getElementById('duplicateModal').style.display = 'block';
 }
 
 function hideDuplicateMailModal() {
-    document.getElementById('duplicateModal').style.display = 'none';
+    document.getElementById('duplicateModal').style.display = 'none';
 }
 
 function setupDuplicateMailModalHandlers() {
-    const modal = document.getElementById('duplicateModal');
-    const closeBtn = document.getElementById('closeDuplicate');
-    const okBtn = document.getElementById('duplicateOkBtn');
+    const modal = document.getElementById('duplicateModal');
+    const closeBtn = document.getElementById('closeDuplicate');
+    const okBtn = document.getElementById('duplicateOkBtn');
 
-    if (closeBtn) closeBtn.addEventListener('click', hideDuplicateMailModal);
-    if (okBtn) okBtn.addEventListener('click', () => {
-        hideDuplicateMailModal();
-        // limpiar campo mail para que el usuario ingrese otro
-        const emailInput = document.getElementById('email');
-        if (emailInput) emailInput.value = '';
-        emailInput.focus();
-    });
+    if (closeBtn) closeBtn.addEventListener('click', hideDuplicateMailModal);
+    if (okBtn) okBtn.addEventListener('click', () => {
+        hideDuplicateMailModal();
+        // limpiar campo mail para que el usuario ingrese otro
+        const emailInput = document.getElementById('email');
+        if (emailInput) emailInput.value = '';
+        emailInput.focus();
+    });
+
+    // cerrar al clickear fuera del contenido
+    if (modal) modal.addEventListener('click', (e) => {
+        if (e.target === modal) hideDuplicateMailModal();
+    });
+}
+
+function showAssignmentConflictModal() {
+    document.getElementById('assignmentConflictModal').style.display = 'block';
+}
+
+function hideAssignmentConflictModal() {
+    document.getElementById('assignmentConflictModal').style.display = 'none';
+}
+
+function setupAssignmentConflictModalHandlers() {
+    const modal = document.getElementById('assignmentConflictModal');
+    const closeBtn = document.getElementById('closeAssignmentConflict');
+    const okBtn = document.getElementById('assignmentConflictOkBtn');
+
+    if (closeBtn) closeBtn.addEventListener('click', hideAssignmentConflictModal);
+    if (okBtn) okBtn.addEventListener('click', hideAssignmentConflictModal);
 
     // cerrar al clickear fuera del contenido
     if (modal) modal.addEventListener('click', (e) => {
-        if (e.target === modal) hideDuplicateMailModal();
+        if (e.target === modal) hideAssignmentConflictModal();
     });
 }
 
 function setupCancelHandler()
 {
-    const cancelBtn = document.getElementById('cancelBtn');
-    cancelBtn.addEventListener('click', () => 
-    {
-        document.getElementById('studentId').value = '';
-    });
+    const cancelBtn = document.getElementById('cancelBtn');
+    cancelBtn.addEventListener('click', () => 
+    {
+        document.getElementById('studentId').value = '';
+    });
 }
 
 //2.0
 function setupPaginationControls() 
 {
-    document.getElementById('prevPage').addEventListener('click', () => 
-    {
-        if (currentPage > 1) 
-        {
-            currentPage--;
-            loadStudents();
-        }
-    });
+    document.getElementById('prevPage').addEventListener('click', () => 
+    {
+        if (currentPage > 1) 
+        {
+            currentPage--;
+            loadStudents();
+        }
+    });
 
-    document.getElementById('nextPage').addEventListener('click', () => 
-    {
-        if (currentPage < totalPages) 
-        {
-            currentPage++;
-            loadStudents();
-        }
-    });
+    document.getElementById('nextPage').addEventListener('click', () => 
+    {
+        if (currentPage < totalPages) 
+        {
+            currentPage++;
+            loadStudents();
+        }
+    });
 
-    document.getElementById('resultsPerPage').addEventListener('change', e => 
-    {
-        currentPage = 1;
-        loadStudents();
-    });
+    document.getElementById('resultsPerPage').addEventListener('change', e => 
+    {
+        currentPage = 1;
+        loadStudents();
+    });
 }
-  
+  
 function getFormData()
 {
-    return {
-        id: document.getElementById('studentId').value.trim(),
-        fullname: document.getElementById('fullname').value.trim(),
-        email: document.getElementById('email').value.trim(),
-        age: parseInt(document.getElementById('age').value.trim(), 10)
-    };
+    return {
+        id: document.getElementById('studentId').value.trim(),
+        fullname: document.getElementById('fullname').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        age: parseInt(document.getElementById('age').value.trim(), 10)
+    };
 }
-  
+  
 function clearForm()
 {
-    document.getElementById('studentForm').reset();
-    document.getElementById('studentId').value = '';
+    document.getElementById('studentForm').reset();
+    document.getElementById('studentId').value = '';
 }
 
 //2.0
 async function loadStudents()
 {
-    try 
-    {
-        const resPerPage = parseInt(document.getElementById('resultsPerPage').value, 10) || limit;
-        const data = await studentsAPI.fetchPaginated(currentPage, resPerPage);
-        console.log(data);
-        renderStudentTable(data.students);
-        totalPages = Math.ceil(data.total / resPerPage);
-        document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
-    } 
-    catch (err) 
-    {
-        console.error('Error cargando estudiantes:', err.message);
-    }
+    try 
+    {
+        const resPerPage = parseInt(document.getElementById('resultsPerPage').value, 10) || limit;
+        const data = await studentsAPI.fetchPaginated(currentPage, resPerPage);
+        console.log(data);
+        renderStudentTable(data.students);
+        totalPages = Math.ceil(data.total / resPerPage);
+        document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
+    } 
+    catch (err) 
+    {
+        console.error('Error cargando estudiantes:', err.message);
+    }
 }
-  
+  
 function renderStudentTable(students)
 {
-    const tbody = document.getElementById('studentTableBody');
-    tbody.replaceChildren();
-  
-    students.forEach(student => 
-    {
-        const tr = document.createElement('tr');
-    
-        tr.appendChild(createCell(student.fullname));
-        tr.appendChild(createCell(student.email));
-        tr.appendChild(createCell(student.age.toString()));
-        tr.appendChild(createActionsCell(student));
-    
-        tbody.appendChild(tr);
-    });
+    const tbody = document.getElementById('studentTableBody');
+    tbody.replaceChildren();
+  
+    students.forEach(student => 
+    {
+        const tr = document.createElement('tr');
+    
+        tr.appendChild(createCell(student.fullname));
+        tr.appendChild(createCell(student.email));
+        tr.appendChild(createCell(student.age.toString()));
+        tr.appendChild(createActionsCell(student));
+    
+        tbody.appendChild(tr);
+    });
 }
-  
+  
 function createCell(text)
 {
-    const td = document.createElement('td');
-    td.textContent = text;
-    return td;
+    const td = document.createElement('td');
+    td.textContent = text;
+    return td;
 }
-  
+  
 function createActionsCell(student)
 {
-    const td = document.createElement('td');
-  
-    const editBtn = document.createElement('button');
-    editBtn.textContent = 'Editar';
-    editBtn.className = 'w3-button w3-blue w3-small';
-    editBtn.addEventListener('click', () => fillForm(student));
-  
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Borrar';
-    deleteBtn.className = 'w3-button w3-red w3-small w3-margin-left';
-    deleteBtn.addEventListener('click', () => confirmDelete(student.id));
-  
-    td.appendChild(editBtn);
-    td.appendChild(deleteBtn);
-    return td;
+    const td = document.createElement('td');
+  
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Editar';
+    editBtn.className = 'w3-button w3-blue w3-small';
+    editBtn.addEventListener('click', () => fillForm(student));
+  
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = 'Borrar';
+    deleteBtn.className = 'w3-button w3-red w3-small w3-margin-left';
+    deleteBtn.addEventListener('click', () => confirmDelete(student.id));
+  
+    td.appendChild(editBtn);
+    td.appendChild(deleteBtn);
+    return td;
 }
-  
+  
 function fillForm(student)
 {
-    document.getElementById('studentId').value = student.id;
-    document.getElementById('fullname').value = student.fullname;
-    document.getElementById('email').value = student.email;
-    document.getElementById('age').value = student.age;
+    document.getElementById('studentId').value = student.id;
+    document.getElementById('fullname').value = student.fullname;
+    document.getElementById('email').value = student.email;
+    document.getElementById('age').value = student.age;
 }
-  
+  
 async function confirmDelete(id) 
 {
-    if (!confirm('¿Estás seguro que deseas borrar este estudiante?')) return;
-  
-    try 
-    {
-        await studentsAPI.remove(id);
-        loadStudents();
-    } 
-    catch (err) 
-    {
-        console.error('Error al borrar:', err.message);
-    }
+    if (!confirm('¿Estás seguro que deseas borrar este estudiante?')) return;
+  
+    try 
+    {
+        const res = await studentsAPI.remove(id); 
+
+        if (res.ok) 
+        {
+            await res.json(); 
+            loadStudents();
+        } 
+        else if (res.status === 409) 
+        {
+            showAssignmentConflictModal();
+        } 
+        else 
+        {
+            const errorBody = await res.json();
+            throw new Error(errorBody.error || `Error al borrar: Status ${res.status}`);
+        }
+    } 
+    catch (err) 
+    {
+        console.error('Error al borrar:', err.message);
+    }
 }
-  

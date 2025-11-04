@@ -83,4 +83,16 @@ function deleteStudent($conn, $id)
     //Se retorna fila afectadas para validar en controlador
     return ['deleted' => $stmt->affected_rows];
 }
+
+
+function studentHasAssignments($conn, $student_id)
+{
+    $sql = "SELECT COUNT(*) AS total FROM students_subjects WHERE student_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $student_id);
+    $stmt->execute();
+    $result = $stmt->get_result()->fetch_assoc();
+
+    return $result['total'] > 0;
+}
 ?>
