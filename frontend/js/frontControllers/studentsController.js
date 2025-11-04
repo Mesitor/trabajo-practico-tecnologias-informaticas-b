@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () =>
     setupFormHandler();
     setupCancelHandler();
     setupPaginationControls();//2.0
+    setupDuplicateMailModalHandlers();
 });
   
 function setupFormHandler()
@@ -34,6 +35,15 @@ function setupFormHandler()
     
         try 
         {
+            const students = await studentsAPI.fetchAll();
+            const duplicate = students.find(s => s.email === student.email && s.id !== student.id);
+
+            if (duplicate)
+            {
+                showDuplicateMailModal();
+                return;
+            }
+
             if (student.id) 
             {
                 await studentsAPI.update(student);
@@ -49,6 +59,34 @@ function setupFormHandler()
         {
             console.error(err.message);
         }
+    });
+}
+
+function showDuplicateMailModal() {
+    document.getElementById('duplicateModal').style.display = 'block';
+}
+
+function hideDuplicateMailModal() {
+    document.getElementById('duplicateModal').style.display = 'none';
+}
+
+function setupDuplicateMailModalHandlers() {
+    const modal = document.getElementById('duplicateModal');
+    const closeBtn = document.getElementById('closeDuplicate');
+    const okBtn = document.getElementById('duplicateOkBtn');
+
+    if (closeBtn) closeBtn.addEventListener('click', hideDuplicateMailModal);
+    if (okBtn) okBtn.addEventListener('click', () => {
+        hideDuplicateMailModal();
+        // limpiar campo mail para que el usuario ingrese otro
+        const emailInput = document.getElementById('email');
+        if (emailInput) emailInput.value = '';
+        emailInput.focus();
+    });
+
+    // cerrar al clickear fuera del contenido
+    if (modal) modal.addEventListener('click', (e) => {
+        if (e.target === modal) hideDuplicateMailModal();
     });
 }
 

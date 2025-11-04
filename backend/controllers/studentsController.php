@@ -46,6 +46,21 @@ function handlePost($conn)
 {
     $input = json_decode(file_get_contents("php://input"), true);
 
+    $email = $input['email'];
+
+    $stmt = $conn->prepare("SELECT COUNT(*) AS total FROM students WHERE email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+
+    if ($row['total'] > 0) 
+    {
+        http_response_code(400); 
+        echo json_encode(["error" => "El correo ya está registrado"]);
+        return; 
+    }
+
     $result = createStudent($conn, $input['fullname'], $input['email'], $input['age']);
     if ($result['inserted'] > 0) 
     {
