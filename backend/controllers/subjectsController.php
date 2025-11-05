@@ -117,4 +117,34 @@ function handleDelete($conn)
         echo json_encode(["error" => "No se pudo eliminar"]);
     }
 }
+
+function handleDelete_v43($conn) 
+{
+    $input = json_decode(file_get_contents("php://input"), true);
+
+    $id = isset($input['id']) ? intval($input['id']) : 0;
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(["error" => "ID inválido"]);
+        return;
+    }
+
+    $count = getAssignmentsCountBySubject($conn, $id);
+    if ($count > 0) {
+        http_response_code(409);
+        echo json_encode([
+            "error" => "No se puede eliminar: la materia está presente en {$count} asignación(es)."
+        ]);
+        return;
+    }
+
+    $result = deleteSubject($conn, $id);
+    if ($result['deleted'] > 0) {
+        echo json_encode(["message" => "Materia eliminada correctamente"]);
+    } else {
+        http_response_code(404);
+        echo json_encode(["error" => "Materia no encontrada"]);
+    }
+}
+
 ?>

@@ -95,4 +95,14 @@ function studentHasAssignments($conn, $student_id)
 
     return $result['total'] > 0;
 }
+
+
+function getAssignmentsCountBySubject($conn, $subjectId)
+{
+    $stmt = $conn->prepare("SELECT COUNT(*) AS c FROM assignments WHERE subject_id = ?");
+    $stmt->bind_param("i", $subjectId);
+    $stmt->execute();
+    return (int)$stmt->get_result()->fetch_assoc()['c'];
+}
+
 ?>
