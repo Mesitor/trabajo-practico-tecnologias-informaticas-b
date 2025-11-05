@@ -105,4 +105,15 @@ function deleteSubject($conn, $id)
 
     return ['deleted' => $stmt->affected_rows];
 }
+
+
+// 4.3
+function getAssignmentsCountBySubject($conn, $subjectId)
+{
+    $stmt = $conn->prepare("SELECT COUNT(*) AS c FROM assignments WHERE subject_id = ?");
+    $stmt->bind_param("i", $subjectId);
+    $stmt->execute();
+    return (int)$stmt->get_result()->fetch_assoc()['c'];
+}
+
 ?>

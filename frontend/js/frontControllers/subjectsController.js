@@ -215,3 +215,43 @@ async function confirmDeleteSubject(id)
         console.error('Error al borrar materia:', err.message);
     }
 }
+
+// 4.3 
+async function confirmDeleteSubject_v43(id)
+{
+    if (!confirm('¿Seguro que deseas borrar esta materia?')) return;
+
+    try
+    {
+        const response = await fetch('/backend/routes/subjectsRoutes.php?v43=1', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+
+        if (response.status === 204 || response.status === 200) {
+            loadSubjects();
+            return;
+        }
+
+        if (response.status === 409) {
+            const data = await response.json().catch(() => ({}));
+            const msg = data?.error || data?.message || 
+                        'No se puede eliminar: la materia tiene asignaciones.';
+            alert(msg);
+            return;
+        }
+
+        if (response.status === 404) {
+            alert('Materia no encontrada.');
+            return;
+        }
+
+        alert('Ocurrió un error al eliminar la materia.');
+    } 
+    catch (error) 
+    {
+        alert('Error de conexión con el servidor.');
+        console.error(error);
+    }
+}
