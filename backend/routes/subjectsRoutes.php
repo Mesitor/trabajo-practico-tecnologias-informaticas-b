@@ -15,4 +15,13 @@ require_once("./controllers/subjectsController.php");
 
 
 
-routeRequest($conn);
+// Si se solicita la versión v43, usamos un handler de DELETE específico
+if (isset($_GET['v43']) && $_GET['v43'] == '1') {
+	// Mapear solo el método DELETE a la implementación v43
+	$customHandlers = [
+		'DELETE' => 'handleDelete_v43'
+	];
+	routeRequest($conn, $customHandlers);
+} else {
+	routeRequest($conn);
+}

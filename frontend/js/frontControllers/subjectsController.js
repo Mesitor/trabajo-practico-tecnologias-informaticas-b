@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () =>
     setupSubjectFormHandler();
     setupCancelHandler();
     setupPaginationControlsSubject();
-    setupDuplicateModalHandlers();
+    setupDuplicateModalHandlers(); // Manejo del modal de duplicados
+    setupErrorModalHandlers(); // Manejo del modal de error al eliminar materia con asignaciones
 });
 
 function setupSubjectFormHandler() 
@@ -98,6 +99,38 @@ function showDuplicateModal()
 function hideDuplicateModal()
 {
     const modal = document.getElementById('duplicateModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Handlers para el modal de error al eliminar materia con asignaciones
+function setupErrorModalHandlers()
+{
+    const modal = document.getElementById('modalError');
+    if (!modal) return;
+
+    // Buscar botón de cerrar dentro del modal (el HTML usa onclick="closeErrorModal()",
+    // pero también exponemos una función global por compatibilidad)
+    const closeBtn = modal.querySelector('button');
+    if (closeBtn) closeBtn.addEventListener('click', hideErrorModal);
+
+    // cerrar al clickear fuera del contenido
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) hideErrorModal();
+    });
+
+    // Exponer función global para que el atributo onclick en el HTML siga funcionando
+    window.closeErrorModal = hideErrorModal;
+}
+
+function showErrorModal()
+{
+    const modal = document.getElementById('modalError');
+    if (modal) modal.style.display = 'block';
+}
+
+function hideErrorModal()
+{
+    const modal = document.getElementById('modalError');
     if (modal) modal.style.display = 'none';
 }
 
@@ -201,23 +234,10 @@ function createSubjectActionsCell(subject)
     return td;
 }
 
-async function confirmDeleteSubject(id)
-{
-    if (!confirm('¿Seguro que deseas borrar esta materia?')) return;
 
-    try
-    {
-        await subjectsAPI.remove(id);
-        loadSubjects();
-    }
-    catch (err)
-    {
-        console.error('Error al borrar materia:', err.message);
-    }
-}
 
 // 4.3 
-async function confirmDeleteSubject_v43(id)
+async function confirmDeleteSubject(id)
 {
     if (!confirm('¿Seguro que deseas borrar esta materia?')) return;
 
@@ -236,22 +256,34 @@ async function confirmDeleteSubject_v43(id)
 
         if (response.status === 409) {
             const data = await response.json().catch(() => ({}));
-            const msg = data?.error || data?.message || 
+            const msg = data?.error || data?.message ||
                         'No se puede eliminar: la materia tiene asignaciones.';
-            alert(msg);
+            // Mostrar modal de error en vez de alert
+            const msgEl = document.getElementById('modalErrorMsg');
+            if (msgEl) msgEl.textContent = msg;
+            showErrorModal();
             return;
         }
 
         if (response.status === 404) {
-            alert('Materia no encontrada.');
+            const msgEl = document.getElementById('modalErrorMsg');
+            if (msgEl) msgEl.textContent = 'Materia no encontrada.';
+            showErrorModal();
             return;
         }
 
-        alert('Ocurrió un error al eliminar la materia.');
+        // Mensaje genérico de error
+        {
+            const msgEl = document.getElementById('modalErrorMsg');
+            if (msgEl) msgEl.textContent = 'Ocurrió un error al eliminar la materia.';
+            showErrorModal();
+        }
     } 
     catch (error) 
     {
-        alert('Error de conexión con el servidor.');
+        const msgEl = document.getElementById('modalErrorMsg');
+        if (msgEl) msgEl.textContent = 'Error de conexión con el servidor.';
+        showErrorModal();
         console.error(error);
     }
 }

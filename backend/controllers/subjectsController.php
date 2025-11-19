@@ -43,7 +43,7 @@ function handleGet($conn)
 function handlePost($conn) 
 {
     $input = json_decode(file_get_contents("php://input"), true);
-
+    // validar nombre
     $name = isset($input['name']) ? trim($input['name']) : '';
     if ($name === '') {
         http_response_code(400);
@@ -59,6 +59,7 @@ function handlePost($conn)
     }
 
     $result = createSubject($conn, $name);
+    
     if ($result['inserted'] > 0) 
     {
         echo json_encode(["message" => "Materia creada correctamente"]);
@@ -73,7 +74,7 @@ function handlePost($conn)
 function handlePut($conn) 
 {
     $input = json_decode(file_get_contents("php://input"), true);
-
+    //
     $id = isset($input['id']) ? intval($input['id']) : 0;
     $name = isset($input['name']) ? trim($input['name']) : '';
 
